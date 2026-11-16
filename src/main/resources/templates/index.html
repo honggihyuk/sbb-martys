@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>홈</title>
+</head>
+
+<th:block layout:fragment="script">
+    <script th:src="@{/js/lib/d3.v7.min.js}"></script>
+    <script th:src="@{/js/journey-map.js}"></script>
+</th:block>
+
+<div layout:fragment="content" class="page page-wide">
+
+    <!-- 1~2. 제목 | 출발 D-day (넓은 화면에서는 한 줄, 좁은 화면에서는 위아래) -->
+    <div class="home-hero">
+    <div>
+        <div class="eyebrow">마르투스 · Martys</div>
+        <h1 class="page-title">2026 청년 신약 성서지리</h1>
+        <div class="page-sub">터키 · 그리스 성서지리</div>
+    </div>
+
+    <div class="dday-row">
+        <div>
+            <div class="dday-label">출발까지</div>
+            <div class="dday" th:text="${dday > 0} ? |D-${dday}| : (${dday == 0} ? 'D-DAY' : |D+${-dday}|)">D-82</div>
+        </div>
+        <div class="dday-side">
+            <span th:text="${#temporals.format(departure, 'yyyy년 M월 d일')}">2027년 2월 1일</span><br>
+            <span th:text="|${#temporals.format(departure, 'EEEE')} 출발|">월요일 출발</span>
+        </div>
+    </div>
+    </div>
+
+    <!-- 3. 최근 공지 -->
+    <div class="gray-list" th:unless="${#lists.isEmpty(noticeList)}">
+        <a th:each="notice : ${noticeList}" th:href="@{|/notice#notice-${notice.id}|}">
+            <span class="tag">공지</span>
+            <span class="title" th:text="${notice.subject}">팀 이름 투표</span>
+            <span class="date" th:text="${#temporals.format(notice.created, 'M.d')}">10.22</span>
+        </a>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 4. 이번 주 말씀 | 체력 증진 -->
+    <div class="two-col">
+        <section>
+            <div class="sec-head">
+                <h3>이번 주 말씀</h3>
+                <span class="meta" th:text="|${week.weekNo()}주차 · ${week.period}|">6주차 · 11.9 – 11.15</span>
+            </div>
+            <div class="route-text" th:text="${week.routeText}">무시아 → 드로아 → …</div>
+
+            <!-- 사도행전(slot 0), 서신서(slot 1) 체크 -->
+            <div class="mt-2">
+                <div th:each="slot : ${ {0, 1} }"
+                     th:with="key=|${week.weekNo()}-${slot}|, on=${checked.contains(key)}"
+                     class="reading" th:classappend="${on} ? 'done'">
+                    <form th:action="@{/study/check}" method="post">
+                        <input type="hidden" name="week" th:value="${week.weekNo()}">
+                        <input type="hidden" name="slot" th:value="${slot}">
+                        <input type="hidden" name="redirect" value="/">
+                        <button type="submit" class="check" th:classappend="${on} ? 'on'" aria-label="읽음 체크"></button>
+                    </form>
+                    <div class="label">
+                        <small th:text="${slot == 0} ? '사도행전' : '서신서'">사도행전</small>
+                        <strong th:text="${slot == 0} ? |사도행전 ${week.acts()}| : |${week.letter()} ${week.letterRange()}|">사도행전 16–17장</strong>
+                    </div>
+                </div>
+            </div>
+            <a th:href="@{/study(view='week')}" class="btn-gray btn-wide mt-3">묵상하기</a>
+        </section>
+
+        <section>
+            <div class="sec-head">
+                <h3>체력 증진</h3>
+                <span class="meta" th:text="${fitnessDday > 0} ? |시작까지 D-${fitnessDday}| : '진행 중'">시작까지 D-20</span>
+            </div>
+            <div class="route-text"
+                 th:text="|${#temporals.format(fitnessStart, 'M월 d일(E)')}부터 출발 전날까지 매일 체크해요|">12월 1일(화)부터…</div>
+            <table class="cal mini mt-3">
+                <thead><tr><th>일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th></tr></thead>
+                <tbody><tr>
+                    <td th:each="d : ${weekStrip}">
+                        <span th:if="${d.date() != null}" class="day"
+                              th:classappend="|${d.checked() ? 'on' : ''} ${d.today() ? 'today' : ''}|"
+                              th:text="${d.date().dayOfMonth}">1</span>
+                    </td>
+                </tr></tbody>
+            </table>
+            <a th:href="@{/fitness}" class="btn-gray btn-wide mt-4">운동 달력 보기</a>
+        </section>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 5. 묵상 여정 지도 : Natural Earth 해안선 위에 바울의 경로와 회원 위치 (static/js/journey-map.js) -->
+    <div class="sec-head">
+        <h3>묵상 여정 <small>(바울의 여정)</small></h3>
+        <span class="meta" th:text="|${readCount} / ${total} 읽음|">11 / 32 읽음</span>
+    </div>
+    <div class="progress-line mb-3"><span th:style="|width: ${readCount * 100 / total}%|"></span></div>
+
+    <div class="jmap"
+         th:data-src="@{/study/journey-map}"
+         th:data-land="@{/data/natural-earth-land.json}"
+         th:data-week-link="@{/study(view='week')}"></div>
+    <div th:replace="~{fragments/journey-legend :: legend}"></div>
+    <div class="d-flex justify-content-between mt-2 small">
+        <span class="text-muted">나는 지금 <b class="text-dark" th:text="${place}">드로아</b></span>
+        <a th:href="@{/study}">크게 보기</a>
+    </div>
+</div>
+</html>

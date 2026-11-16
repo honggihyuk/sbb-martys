@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>모임 기록</title>
+</head>
+
+<div layout:fragment="content" class="page" style="max-width: 640px">
+    <a th:href="@{/moments}" class="small text-muted">‹ 모임 기록</a>
+    <div class="text-muted small mt-3" th:text="${#temporals.format(moment.meetDate, 'yyyy년 M월 d일 EEEE')}">날짜</div>
+    <h1 class="page-title fs-2 mb-3" th:text="${moment.title}">제목</h1>
+
+    <!-- 사진 : 첫 장은 크게, 나머지는 옆으로 넘겨 보기 -->
+    <th:block th:with="photos=${moment.allPhotos}">
+        <img th:if="${!photos.isEmpty()}" th:src="${photos[0]}" class="photo mb-2" style="aspect-ratio:auto" alt="모임 사진">
+        <div class="gallery mb-4" th:if="${photos.size() > 1}">
+            <a th:each="p, st : ${photos}" th:unless="${st.first}" th:href="${p}" target="_blank">
+                <img th:src="${p}" alt="모임 사진" loading="lazy">
+            </a>
+        </div>
+    </th:block>
+
+    <div class="md-content" th:utext="${contentHtml}">내용</div>
+
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="note-meta mt-0">
+            <span th:replace="~{fragments/avatar :: avatar(${moment.author}, 'sm')}"></span>
+            <span th:text="${moment.author?.displayName ?: '탈퇴한 회원'}">이름</span>
+        </div>
+        <form th:if="${loginMember.admin or loginMember.id == moment.author?.id}"
+              th:action="@{|/moments/${moment.id}/delete|}" method="post" onsubmit="return confirm('삭제할까요?');">
+            <button type="submit" class="link-btn">삭제</button>
+        </form>
+    </div>
+</div>
+</html>

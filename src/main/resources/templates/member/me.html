@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>내 정보</title>
+</head>
+
+<div layout:fragment="content" class="page" style="max-width: 420px" th:with="m=${loginMember}">
+    <div class="eyebrow">내 정보</div>
+    <div class="d-flex align-items-center gap-4 my-3">
+        <span th:replace="~{fragments/avatar :: avatar(${m}, 'lg')}"></span>
+        <div>
+            <div class="fs-4 fw-bold" th:text="${m.displayName}">홍기혁</div>
+            <div class="text-muted small" th:text="${m.subtitle}">송도 · 남</div>
+            <div class="text-muted small" th:if="${m.teamNo != null}">
+                <span th:text="${m.teamName}">5조</span>
+                <span class="badge-leader" th:if="${m.leader}" th:text="${m.leaderLabel}">조장</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+        <form th:action="@{/me/photo}" method="post" enctype="multipart/form-data" class="flex-grow-1 m-0">
+            <label class="btn-blue btn-wide mb-0" style="cursor:pointer">
+                사진 바꾸기
+                <input type="file" name="photo" accept="image/*" hidden onchange="this.form.submit()">
+            </label>
+        </form>
+        <form th:if="${m.photoPath != null}" th:action="@{/me/photo/delete}" method="post" class="m-0">
+            <button type="submit" class="btn-gray" style="padding: .9rem 1.2rem">지우기</button>
+        </form>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 로그아웃은 POST (th:action 이 CSRF 토큰을 자동으로 넣어준다) -->
+    <form th:action="@{/member/logout}" method="post">
+        <button type="submit" class="btn-gray btn-wide">로그아웃</button>
+    </form>
+</div>
+</html>

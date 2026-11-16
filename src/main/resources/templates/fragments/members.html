@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!-- 조원 명단 : 조장(리더)이 맨 앞 (순서는 GroupService.getTeam)
+     쓰는 법 : <div th:replace="~{fragments/members :: grid(${team.members()})}"></div> -->
+<div th:fragment="grid(members)" class="member-grid">
+    <div class="member-item" th:each="m : ${members}">
+        <span th:replace="~{fragments/avatar :: avatar(${m}, 'md')}"></span>
+        <div>
+            <span class="fw-semibold" th:text="${m.displayName}">홍기혁</span>
+            <span class="badge-leader" th:if="${m.leader}" th:text="${m.leaderLabel}">조장</span>
+            <small th:text="${m.community?.label}">송도</small>
+        </div>
+    </div>
+</div>
+</html>

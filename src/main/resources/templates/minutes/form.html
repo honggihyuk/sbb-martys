@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>회의록 쓰기</title>
+</head>
+
+<th:block layout:fragment="script">
+    <script th:src="@{/js/write-form.js}"></script>
+</th:block>
+
+<div layout:fragment="content" class="page" style="max-width: 640px">
+    <h1 class="page-title fs-2 mb-4">회의록 쓰기</h1>
+    <form th:action="@{/minutes/create}" th:object="${minutesDto}" method="post" class="write-form">
+        <div class="wf-row">
+            <input type="date" th:field="*{meetingDate}" class="wf-input wf-date">
+            <input type="text" th:field="*{title}" class="wf-input" placeholder="회의 제목 (예: 2차 조장 회의)" maxlength="100">
+        </div>
+        <p th:if="${#fields.hasErrors('meetingDate')}" th:errors="*{meetingDate}" class="fieldError"></p>
+        <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="fieldError"></p>
+
+        <textarea th:field="*{content}" class="wf-body" rows="14"
+                  placeholder="참석:&#10;&#10;안건&#10;1.&#10;&#10;정한 것&#10;-&#10;&#10;할 일&#10;- (누가)"></textarea>
+        <p th:if="${#fields.hasErrors('content')}" th:errors="*{content}" class="fieldError"></p>
+
+        <!-- 기본 틀 : 아래 template 안의 글을 내용 칸에 넣는다 (static/js/write-form.js 6번)
+             template 안은 줄 맨 앞부터 써야 들여쓰기가 같이 들어가지 않는다 -->
+        <button type="button" class="link-btn template-btn" data-template="content">기본 틀 넣기 (참석 · 안건 · 정한 것 · 할 일)</button>
+<template id="content-template">
+참석: 
+
+안건
+1. 
+
+정한 것
+- 
+
+할 일
+- (누가) 무엇을</template>
+
+        <div class="wf-actions">
+            <a th:href="@{/minutes}" class="link-btn fw-semibold text-dark">취소</a>
+            <button type="submit" class="btn-blue">저장</button>
+        </div>
+    </form>
+</div>
+</html>

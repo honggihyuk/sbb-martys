@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>팀 구성</title>
+</head>
+
+<div layout:fragment="content" class="page">
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">마르투스</div>
+            <h1 class="page-title">팀 구성</h1>
+            <div class="page-sub" th:text="|${#lists.size(teams)}개 조 · 조 편성은 관리자가 정해요|">7개 조</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <section th:each="team : ${teams}">
+            <div class="sec-head">
+                <h3 th:text="${team.name}">1조</h3>
+                <span class="meta" th:text="|${#lists.size(team.members())}명|">5명</span>
+            </div>
+            <div class="member-grid">
+                <div class="member-item" th:each="m : ${team.members()}">
+                    <span th:replace="~{fragments/avatar :: avatar(${m}, 'md')}"></span>
+                    <div>
+                        <span class="fw-semibold" th:text="${m.displayName}">홍기혁</span>
+                        <span class="badge-leader" th:if="${m.leader}">조장</span>
+                        <small th:text="${m.community?.label}">송도</small>
+                    </div>
+                </div>
+            </div>
+            <p th:if="${#lists.isEmpty(team.members())}" class="text-muted small">아직 조원이 없어요</p>
+        </section>
+    </div>
+</div>
+</html>

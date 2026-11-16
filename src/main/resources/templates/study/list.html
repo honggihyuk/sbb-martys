@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>말씀 묵상</title>
+</head>
+
+<th:block layout:fragment="script">
+    <script th:src="@{/js/lib/d3.v7.min.js}"></script>
+    <script th:src="@{/js/journey-map.js}"></script>
+</th:block>
+
+<div layout:fragment="content" class="page page-wide">
+    <div class="eyebrow">사도바울의 전도여행 · 10.5 – 1.24</div>
+    <div class="d-flex justify-content-between align-items-end">
+        <h1 class="page-title">말씀 묵상</h1>
+        <span class="text-muted"><b class="text-dark" th:text="${checked.size()}">11</b> / <span th:text="${total}">32</span></span>
+    </div>
+    <div class="progress-line mt-3"><span th:style="|width: ${checked.size() * 100 / total}%|"></span></div>
+
+    <div class="sub-tabs">
+        <a th:href="@{/study}" th:classappend="${view != 'week'} ? 'active'">16주 한눈에</a>
+        <a th:href="@{/study(view='week')}" th:classappend="${view == 'week'} ? 'active'">주차별로 읽기</a>
+    </div>
+
+    <p class="mb-0" th:if="${view == 'week'}">지금 바울은 <b th:text="${place}">드로아</b>에 있어요</p>
+
+    <!-- ===== 16주 한눈에 ===== -->
+    <!-- 넓은 화면 : 왼쪽 지도, 오른쪽 주차 목록 (좁은 화면에서는 위아래) -->
+    <div th:if="${view != 'week'}" class="overview-grid">
+        <!-- 묵상 여정 지도 (전체) : 경로를 누르면 그 주차로 이동 -->
+        <div class="overview-map">
+            <div class="jmap"
+                 th:data-src="@{/study/journey-map}"
+                 th:data-land="@{/data/natural-earth-land.json}"
+                 th:data-week-link="@{/study(view='week')}"></div>
+            <div class="map-foot">
+                <p class="mb-0">지금 바울은 <b th:text="${place}">드로아</b>에 있어요</p>
+                <div th:replace="~{fragments/journey-legend :: legend}"></div>
+            </div>
+            <p class="text-muted small mt-2 mb-0">읽고 나서 동그라미를 누르면 바울의 경로를 따라 한 걸음씩 나아가요.</p>
+        </div>
+
+        <div class="overview-list">
+
+        <th:block th:each="entry : ${journeys}">
+            <div class="journey-title" th:with="j=${entry.key}, list=${entry.value}">
+                <span><span class="line" th:classappend="|j${j}|"></span><span th:text="${journeyNames[j]}">제1차 전도여행</span></span>
+                <span class="count" th:text="|${journeyCounts.get(j)}/${#lists.size(list) * 2}|">8/8</span>
+            </div>
+            <a th:each="w : ${entry.value}" class="week-row"
+               th:href="@{/study(view='week', week=${w.weekNo()})}"
+               th:with="done=${checked.contains(w.weekNo() + '-0') and checked.contains(w.weekNo() + '-1')}">
+                <span class="num" th:classappend="${done} ? 'done' : (${w.weekNo() == currentWeekNo} ? 'cur')"
+                      th:text="${done} ? '✓' : ${w.weekNo()}">1</span>
+                <span class="body">
+                    <strong th:text="${w.routeText}">수리아 안디옥 → …</strong>
+                    <small><b th:if="${w.weekNo() == currentWeekNo}">이번 주 · </b><span th:text="${w.summary}">10.5 – 10.11 · 행 9–12장 · 갈 1–3장</span></small>
+                </span>
+                <span class="arrow">›</span>
+            </a>
+        </th:block>
+
+        <div class="d-flex justify-content-between mt-4 small">
+            <span class="text-muted">체크 기록은 내 계정에 저장돼요</span>
+            <form th:action="@{/study/reset}" method="post" onsubmit="return confirm('체크 기록을 모두 지울까요?');">
+                <button type="submit" class="link-btn text-decoration-underline">기록 초기화</button>
+            </form>
+        </div>
+        </div>
+    </div>
+
+    <!-- ===== 주차별로 읽기 : 왼쪽 지도, 오른쪽 본문 (휴대폰에서는 위아래) ===== -->
+    <div th:if="${view == 'week'}" th:with="w=${selected}, weekDone=${checked.contains(selected.weekNo() + '-0') and checked.contains(selected.weekNo() + '-1')}"
+         class="week-grid">
+        <!-- 이번 주차 경로만 크게 -->
+        <div class="week-map">
+            <div class="jmap"
+                 th:data-src="@{/study/journey-map}"
+                 th:data-land="@{/data/natural-earth-land.json}"
+                 th:data-focus-week="${w.weekNo()}"></div>
+            <div th:replace="~{fragments/journey-legend :: legend}"></div>
+        </div>
+
+        <div>
+            <div class="d-flex justify-content-between align-items-center text-center mb-3">
+                <a th:href="@{/study(view='week', week=${w.weekNo() - 1})}" class="fs-4 text-dark px-2"
+                   th:style="${w.weekNo() == 1} ? 'visibility:hidden'" aria-label="이전 주차">‹</a>
+                <div>
+                    <div class="small" style="color: var(--blue)" th:text="${journeyNames[w.journey()]}">제2차 전도여행</div>
+                    <div class="fs-4 fw-bold" th:text="|${w.weekNo()}주차|">6주차</div>
+                    <div class="small text-muted">
+                        <span th:text="${w.period}">11.9 – 11.15</span>
+                        <b th:if="${w.weekNo() == currentWeekNo}" style="color: var(--blue)"> · 이번 주</b>
+                    </div>
+                </div>
+                <a th:href="@{/study(view='week', week=${w.weekNo() + 1})}" class="fs-4 text-dark px-2"
+                   th:style="${w.weekNo() == weeks.size()} ? 'visibility:hidden'" aria-label="다음 주차">›</a>
+            </div>
+
+            <!-- 16칸 진행 막대 : 누르면 그 주차로 -->
+            <div class="seg mb-4">
+                <a th:each="x : ${weeks}" th:href="@{/study(view='week', week=${x.weekNo()})}" th:title="|${x.weekNo()}주차|"
+                   th:classappend="|${checked.contains(x.weekNo() + '-0') and checked.contains(x.weekNo() + '-1') ? 'on' : ''} ${x.weekNo() == w.weekNo() ? 'cur' : ''}|"></a>
+            </div>
+
+            <h5 class="fw-bold pb-3 border-bottom" th:text="${w.routeText}">무시아 → 드로아 → …</h5>
+
+            <div th:each="slot : ${ {0, 1} }"
+                 th:with="key=|${w.weekNo()}-${slot}|, on=${checked.contains(key)}"
+                 class="reading" th:classappend="${on} ? 'done'">
+                <form th:action="@{/study/check}" method="post">
+                    <input type="hidden" name="week" th:value="${w.weekNo()}">
+                    <input type="hidden" name="slot" th:value="${slot}">
+                    <input type="hidden" name="redirect" th:value="|/study?view=week&week=${w.weekNo()}|">
+                    <button type="submit" class="check" th:classappend="${on} ? 'on'" aria-label="읽음 체크"></button>
+                </form>
+                <div class="label">
+                    <small th:text="${slot == 0} ? '사도행전' : '서신서'">사도행전</small>
+                    <strong th:text="${slot == 0} ? |사도행전 ${w.acts()}| : |${w.letter()} ${w.letterRange()}|">사도행전 16–17장</strong>
+                </div>
+            </div>
+
+            <!-- 두 본문을 다 읽으면 : 다음 주차로 넘어가기 -->
+            <th:block th:if="${weekDone}">
+                <p class="week-done" th:text="${w.weekNo() < weeks.size()} ? |${w.weekNo()}주차를 마쳤어요. 지도에 경로가 이어졌어요.| : '16주 여정을 모두 마쳤어요. 바울과 함께 로마에 도착했어요!'">2주차를 마쳤어요.</p>
+                <a th:if="${w.weekNo() < weeks.size()}" th:href="@{/study(view='week', week=${w.weekNo() + 1})}"
+                   class="btn-blue btn-wide btn-lg-next" th:text="|${w.weekNo() + 1}주차로 넘어가기|">3주차로 넘어가기</a>
+            </th:block>
+            <th:block th:unless="${weekDone}">
+                <p class="text-muted small mt-3">읽고 나서 동그라미를 누르면 체크돼요. 두 본문을 다 읽으면 다음 주차로 넘어갈 수 있어요.</p>
+                <a th:if="${w.weekNo() < weeks.size()}" th:href="@{/study(view='week', week=${w.weekNo() + 1})}"
+                   class="link-btn" th:text="|${w.weekNo() + 1}주차 미리 보기 ›|">다음 주차 미리 보기</a>
+            </th:block>
+        </div>
+    </div>
+
+    <p class="text-muted mt-5" style="font-size: .75rem">고대 지명의 정확한 위치와 일부 여정·서신서의 기록 시점에는 학자들 사이에 견해 차이가 있습니다.</p>
+</div>
+</html>

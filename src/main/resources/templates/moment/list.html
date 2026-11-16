@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>모임 기록</title>
+</head>
+
+<th:block layout:fragment="script">
+    <script th:src="@{/js/write-form.js}"></script>
+</th:block>
+
+<div layout:fragment="content" class="page">
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">마르투스</div>
+            <h1 class="page-title">모임 기록</h1>
+            <div class="page-sub">함께한 모임을 사진과 글로 남겨요</div>
+        </div>
+        <a th:unless="${showForm}" th:href="@{/moments(write='')}" class="btn-blue">기록하기</a>
+    </div>
+
+    <!-- ===== 기록하기 : /moments?write ===== -->
+    <form th:if="${showForm}" th:action="@{/moments/create}" th:object="${momentDto}"
+          method="post" enctype="multipart/form-data" class="write-form">
+        <div th:if="${#fields.hasGlobalErrors()}" class="fieldError mb-2">
+            <div th:each="err : ${#fields.globalErrors()}" th:text="${err}">오류</div>
+        </div>
+
+        <div class="wf-row">
+            <input type="date" th:field="*{meetDate}" class="wf-input wf-date">
+            <input type="text" th:field="*{title}" class="wf-input" placeholder="모임 이름 (예: 1차 사전 모임)" maxlength="100" autofocus>
+        </div>
+        <p th:if="${#fields.hasErrors('meetDate')}" th:errors="*{meetDate}" class="fieldError"></p>
+        <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="fieldError"></p>
+
+        <!-- 사진 여러 장 : 누르거나 끌어다 놓기 (static/js/write-form.js) -->
+        <label class="dropzone" data-previews="photo-previews">
+            <input type="file" name="photos" accept="image/*" multiple data-max="10">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+            <b>사진 추가</b>
+            <span>여러 장을 한 번에 고를 수 있어요</span>
+        </label>
+        <div class="thumbs" id="photo-previews"></div>
+
+        <!-- 글 서식 도구 -->
+        <div class="md-toolbar" role="toolbar" aria-label="글 서식">
+            <button type="button" data-md="h1" data-for="content">제목</button>
+            <button type="button" data-md="h2" data-for="content">소제목</button>
+            <button type="button" data-md="p" data-for="content">본문</button>
+            <i></i>
+            <button type="button" data-md="bold" data-for="content"><b>굵게</b></button>
+            <button type="button" data-md="ul" data-for="content">• 목록</button>
+            <button type="button" data-md="ol" data-for="content">1. 목록</button>
+        </div>
+        <textarea th:field="*{content}" class="wf-body" rows="10"
+                  placeholder="어떤 모임이었나요? 애플 메모를 복사해 붙여 넣어도 돼요"></textarea>
+
+        <div class="wf-actions">
+            <a th:href="@{/moments}" class="link-btn fw-semibold text-dark">취소</a>
+            <button type="submit" class="btn-blue">올리기</button>
+        </div>
+    </form>
+
+    <div th:if="${momentMap.isEmpty() and showForm == null}" class="empty">
+        <strong>아직 모임 기록이 없어요</strong>
+        <span>첫 모임을 남겨 보세요</span>
+    </div>
+
+    <!-- 월별로 묶어서 -->
+    <section th:each="entry : ${momentMap}" class="mb-5">
+        <div class="sec-head mb-3">
+            <h3 th:text="${entry.key}">2026년 11월</h3>
+            <span class="meta" th:text="|${#lists.size(entry.value)}개|">1개</span>
+        </div>
+        <div class="grid-2">
+            <article th:each="m : ${entry.value}">
+                <a th:href="@{|/moments/${m.id}|}" class="photo-wrap d-block">
+                    <img th:if="${m.photoPath != null}" th:src="${m.photoPath}" class="photo" alt="모임 사진">
+                    <div th:unless="${m.photoPath != null}" class="photo-empty">사진 없음</div>
+                    <span class="photo-count" th:if="${m.allPhotos.size() > 1}" th:text="|사진 ${m.allPhotos.size()}장|">사진 3장</span>
+                </a>
+                <div class="text-muted small mt-3" th:text="${#temporals.format(m.meetDate, 'M월 d일 EEEE')}">11월 8일 일요일</div>
+                <h3 class="fw-bold fs-5 my-1" th:text="${m.title}">1조 조모임</h3>
+                <p class="note-text mb-1" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden"
+                   th:text="${@markdown.toPlain(m.content)}">내용</p>
+                <a th:href="@{|/moments/${m.id}|}" class="small fw-semibold">전체 보기 ›</a>
+                <div class="note-meta">
+                    <span th:replace="~{fragments/avatar :: avatar(${m.author}, 'sm')}"></span>
+                    <span th:text="${m.author?.displayName ?: '탈퇴한 회원'}">류태규</span>
+                </div>
+            </article>
+        </div>
+    </section>
+</div>
+</html>

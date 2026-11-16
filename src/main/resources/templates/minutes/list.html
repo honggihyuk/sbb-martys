@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>회의록</title>
+</head>
+
+<div layout:fragment="content" class="page">
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">마르투스</div>
+            <h1 class="page-title">회의록</h1>
+            <div class="page-sub">조장·리더만 볼 수 있어요</div>
+        </div>
+        <a th:href="@{/minutes/create}" class="btn-blue">회의록 쓰기</a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(minutesList)}" class="empty">
+        <strong>아직 회의록이 없어요</strong>
+        <span>첫 회의 내용을 남겨 보세요</span>
+    </div>
+
+    <a th:each="m : ${minutesList}" th:href="@{|/minutes/${m.id}|}" class="week-row">
+        <span class="body">
+            <strong th:text="${m.title}">회의 제목</strong>
+            <small th:text="|${#temporals.format(m.meetingDate, 'yyyy.M.d (E)')} · ${m.author?.displayName ?: '탈퇴한 회원'}|">2026.11.1 · 홍기혁</small>
+        </span>
+        <span class="arrow">›</span>
+    </a>
+</div>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>체력 증진</title>
+</head>
+
+<div layout:fragment="content" class="page" style="max-width: 640px">
+    <div class="eyebrow">바울의 길을 함께 걷기 위해</div>
+    <div class="d-flex justify-content-between align-items-end">
+        <h1 class="page-title">체력 증진</h1>
+        <span class="text-muted" th:text="|${#temporals.format(start, 'M.d')} – ${#temporals.format(end, 'M.d')}|">12.1 – 1.31</span>
+    </div>
+
+    <div class="dday-row">
+        <div>
+            <div class="dday-label" th:text="${dday > 0} ? '시작까지' : '체크한 날'">시작까지</div>
+            <div class="dday" th:text="${dday > 0} ? |D-${dday}| : |${checkedCount}일|">D-20</div>
+        </div>
+        <div class="dday-side">
+            <span th:text="|${#temporals.format(start, 'M월 d일(E)')}부터|">12월 1일(화)부터</span><br>매일 체크해요
+        </div>
+    </div>
+
+    <hr class="divider">
+
+    <section th:each="month : ${months}" class="mb-5">
+        <div class="sec-head">
+            <h3 th:text="${month.title()}">12월</h3>
+            <span class="meta" th:text="|${month.checkedCount()} / ${month.dayCount()}일|">0 / 31일</span>
+        </div>
+        <table class="cal">
+            <thead><tr><th>일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th></tr></thead>
+            <tbody>
+            <tr th:each="week : ${month.weeks()}">
+                <td th:each="d : ${week}">
+                    <th:block th:if="${d.date() != null}">
+                        <!-- 체크할 수 있는 날만 버튼 -->
+                        <form th:if="${d.checkable()}" th:action="@{/fitness/check}" method="post" class="m-0">
+                            <input type="hidden" name="date" th:value="${d.date()}">
+                            <button type="submit" class="day can"
+                                    th:classappend="|${d.checked() ? 'on' : ''} ${d.today() ? 'today' : ''}|"
+                                    th:text="${d.date().dayOfMonth}">1</button>
+                        </form>
+                        <span th:unless="${d.checkable()}" class="day" th:text="${d.date().dayOfMonth}">1</span>
+                    </th:block>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <p class="text-muted small" th:text="|${#temporals.format(start, 'M월 d일(E)')}이 되면 날짜를 눌러 체크할 수 있어요.|"></p>
+</div>
+</html>

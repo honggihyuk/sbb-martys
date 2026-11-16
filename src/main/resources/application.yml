@@ -1,0 +1,86 @@
+####################################
+# Port & Project Name
+####################################
+server:
+  port: 8080                    # 포트 번호
+
+spring:
+  application:
+    name: SBB
+
+  devtools:
+    restart:
+      enabled: true
+
+    livereload:
+      enabled: true
+      port: 35729
+
+  thymeleaf:
+    cache: false
+
+  # 요일·날짜를 한국어로 표시 (예: 월요일, (화))
+  web:
+    locale: ko_KR
+    locale-resolver: fixed
+
+  ####################################
+  # MySQL 설정
+  ####################################
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/sbb_a?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: "rootroot"
+
+  ####################################
+  # JPA 설정
+  ####################################
+  jpa:
+    open-in-view: true      # JPA 영속성 컨텍스트를 뷰까지 유지할지 여부
+    hibernate:
+      ddl-auto: update      # create, update, ...
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy # 카멜케이스를 언더스코어로 변환
+    show-sql: true          # SQL 출력 여부
+    properties:
+      hibernate:
+        format_sql: true    # SQL 포맷팅 여부
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  servlet:
+    encoding:
+      charset: UTF-8        # 인코딩 설정
+    multipart:
+      max-file-size: 10MB     # 사진 1장 최대 크기
+      max-request-size: 60MB   # 모임 기록 : 사진 여러 장을 한 번에
+
+####################################
+# 관리자 계정 (서버 시작 시 없으면 자동 생성)
+####################################
+app:
+  admin:
+    username: admin
+    password: admin1234     # 꼭 바꿔서 사용하세요
+    email: admin@sbb.local
+
+  # 사진 업로드 폴더 (프로젝트 폴더 아래 uploads)
+  upload-dir: uploads
+
+  ####################################
+  # Google Maps ('지도' 메뉴)
+  #  1) Google Cloud 콘솔에서 Maps JavaScript API, Places API (New) 사용 설정
+  #     (차로 이동 거리·시간까지 보려면 Routes API 도 사용 설정)
+  #  2) API 키를 만들고 '웹사이트 제한'에 http://localhost:8080/* 추가
+  #  3) 키는 코드에 적지 말고 환경변수 GOOGLE_MAPS_API_KEY 로 넣는다
+  #     (IntelliJ : Run > Edit Configurations > Environment variables)
+  #  키가 없으면 Natural Earth 지도로 대신 보여준다.
+  ####################################
+  google-maps:
+    api-key: ${GOOGLE_MAPS_API_KEY:}
+    map-id: ${GOOGLE_MAPS_MAP_ID:DEMO_MAP_ID}   # 고급 마커용 지도 ID (없으면 DEMO_MAP_ID)
+
+  # 지도 메뉴 날씨 : Open-Meteo (API 키 필요 없음)
+  weather:
+    forecast-url: https://api.open-meteo.com/v1/forecast
+    archive-url: https://archive-api.open-meteo.com/v1/archive

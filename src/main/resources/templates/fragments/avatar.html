@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!-- 프로필 동그라미 : 사진이 있으면 사진, 없으면 이름 두 글자
+     사용법 : <span th:replace="~{fragments/avatar :: avatar(${member}, 'md')}"></span> -->
+<th:block th:fragment="avatar(m, size)">
+    <img th:if="${m != null and m.photoPath != null}" th:src="${m.photoPath}" th:class="|avatar ${size}|" alt="">
+    <span th:if="${m != null and m.photoPath == null}" th:class="|avatar ${size}|" th:text="${m.initials}">기혁</span>
+</th:block>
+</html>

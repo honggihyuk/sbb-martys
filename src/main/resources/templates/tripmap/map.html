@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>지도</title>
+</head>
+
+<th:block layout:fragment="script">
+    <!-- 키가 없거나 Google 지도를 못 불러오면 Natural Earth 지도로 대신 보여준다 -->
+    <script th:src="@{/js/lib/d3.v7.min.js}"></script>
+    <script th:src="@{/js/trip-map.js}"></script>
+    <!-- Google Maps JavaScript API : 다 불러오면 initTripMap() 을 부른다 (static/js/trip-map.js) -->
+    <script th:if="${!#strings.isEmpty(apiKey)}" async
+            th:src="|https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async&libraries=places,marker&language=ko&region=KR&callback=initTripMap|"></script>
+</th:block>
+
+<div layout:fragment="content" class="page">
+    <div class="eyebrow" th:text="|터키 · 그리스 성서지리 · ${#temporals.format(departure, 'yyyy.M.d')} 출발|">터키 · 그리스 성서지리</div>
+    <div class="d-flex justify-content-between align-items-end">
+        <h1 class="page-title">지도</h1>
+        <span class="text-muted small" th:text="|${days.size()}일 · ${stopCount}곳|">5일 · 18곳</span>
+    </div>
+    <div class="page-sub">가는 일정을 날짜별로 계획하고, 다녀온 곳을 기록해요</div>
+
+    <!-- 날짜 탭 -->
+    <nav class="day-tabs">
+        <a th:href="@{/map}" th:classappend="${selected == null} ? 'active'">전체</a>
+        <a th:each="d : ${days}" th:href="@{/map(day=${d.dayNo})}"
+           th:classappend="|${selected != null and selected.id == d.id ? 'active' : ''} dc-${(d.dayNo - 1) % 10 + 1}|">
+            <i></i><span th:text="|${d.dayNo}일차|">1일차</span>
+            <small th:text="${#temporals.format(d.date, 'M.d(E)')}">2.1(월)</small>
+        </a>
+    </nav>
+
+    <!-- 지도 -->
+    <div id="trip-map" class="tmap"
+         th:data-weather="@{/map/weather}"
+         th:data-src="@{/map/data}"
+         th:data-land="@{/data/natural-earth-land.json}"
+         th:data-day="${selected != null} ? ${selected.dayNo} : ''"
+         th:data-map-id="${mapId}"
+         th:data-has-key="${!#strings.isEmpty(apiKey)}"></div>
+    <p class="tmap-notice" id="tmap-notice" th:if="${#strings.isEmpty(apiKey)}">
+        Google Maps API 키가 아직 없어서 Natural Earth 지도로 보여드려요.
+        키를 넣으면 실제 지도와 장소 검색을 쓸 수 있어요. (application.yml 의 <code>app.google-maps.api-key</code>)
+    </p>
+
+    <!-- ===== 선택한 날 : 장소 추가 ===== -->
+    <section th:if="${selected != null}" class="day-head" th:with="d=${selected}"
+             th:classappend="|dc-${(d.dayNo - 1) % 10 + 1}|">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <div class="small fw-bold day-color"
+                     th:text="|${d.dayNo}일차 · ${#temporals.format(d.date, 'M월 d일 EEEE')}|">1일차 · 2월 1일 월요일</div>
+                <h2 class="fw-bold fs-4 mb-1" th:text="${d.title}">이스탄불 도착</h2>
+                <div class="note-text small text-muted" th:if="${d.memo != null and !#strings.isEmpty(d.memo)}" th:text="${d.memo}">메모</div>
+            </div>
+            <a th:if="${d.directionsUrl != null}" th:href="${d.directionsUrl}" target="_blank" rel="noopener"
+               class="btn-gray btn-sm text-nowrap">길찾기 ↗</a>
+        </div>
+
+        <!-- 장소 추가 -->
+        <form th:action="@{/map/stop}" method="post" class="stop-form" id="stop-form">
+            <input type="hidden" name="dayId" th:value="${d.id}">
+            <input type="hidden" name="lat" id="f-lat">
+            <input type="hidden" name="lng" id="f-lng">
+            <input type="hidden" name="placeId" id="f-placeId">
+            <input type="hidden" name="address" id="f-address">
+
+            <div class="fw-bold mb-2">장소 추가</div>
+            <!-- Google 장소 검색 (키가 있을 때 trip-map.js 가 검색창을 넣는다) -->
+            <div id="place-search" class="mb-2"></div>
+            <div class="d-flex gap-2 flex-wrap mb-2">
+                <select id="bible-place" class="form-select form-select-sm w-auto" aria-label="성경 지명에서 고르기">
+                    <option value="">성경 지명에서 고르기</option>
+                    <option th:each="p : ${biblePlaces}" th:value="${p.name()}"
+                            th:data-lat="${p.lat()}" th:data-lng="${p.lng()}" th:data-modern="${p.modern()}"
+                            th:text="|${p.name()} · ${p.modern()}|">드로아</option>
+                </select>
+                <span class="picked small text-muted align-self-center" id="picked">또는 지도를 눌러 위치를 골라요</span>
+            </div>
+            <div class="row g-2">
+                <div class="col-12 col-sm-6">
+                    <input type="text" name="name" id="f-name" class="form-control" placeholder="장소 이름" maxlength="100" required>
+                </div>
+                <div class="col-5 col-sm-2">
+                    <input type="time" name="time" class="form-control" aria-label="시간">
+                </div>
+                <div class="col-7 col-sm-4">
+                    <input type="text" name="memo" class="form-control" placeholder="메모 (선택)">
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-2">
+                <button type="submit" class="btn-blue btn-sm" id="f-submit">일정에 추가</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- ===== 일정 목록 ===== -->
+    <div class="mt-4">
+        <p class="text-muted" th:if="${days.isEmpty()}">아직 일정이 없어요. 아래에서 첫째 날을 만들어 보세요.</p>
+
+        <section th:each="d : ${shownDays}" class="day-block" th:classappend="|dc-${(d.dayNo - 1) % 10 + 1}|"
+                 th:with="canEditDay=${me.admin or me.leader or (d.author != null and d.author?.id == me.id)}">
+            <div class="d-flex justify-content-between align-items-center">
+                <a th:href="@{/map(day=${d.dayNo})}" class="day-title">
+                    <i></i>
+                    <b th:text="|${d.dayNo}일차|">1일차</b>
+                    <span class="text-muted" th:text="${#temporals.format(d.date, 'M.d(E)')}">2.1(월)</span>
+                    <span th:text="${d.title}">이스탄불 도착</span>
+                </a>
+                <span class="small text-muted text-nowrap">
+                    <th:block th:if="${d.stops.size() > 1}" th:text="|총 ${d.totalDistance} · |">총 120km · </th:block>
+                    <th:block th:text="|${d.visitedCount} / ${d.stops.size()} 다녀옴|">0 / 3 다녀옴</th:block>
+                </span>
+            </div>
+
+            <p class="small text-muted mt-2 mb-0" th:if="${d.stops.isEmpty()}">아직 들를 곳이 없어요.
+                <a th:if="${selected == null}" th:href="@{/map(day=${d.dayNo})}">장소 추가하기</a></p>
+
+            <ol class="stop-list">
+                <th:block th:each="s, st : ${d.stops}">
+                <!-- 앞 장소에서 이동 거리 (직선) + 길찾기 -->
+                <li th:if="${st.index > 0}" class="leg">
+                    <span th:text="|↓ ${d.legText(st.index)}|">↓ 12.3km</span><span class="text-muted"> 직선</span>
+                    <span class="drive" th:data-from="${d.stops[st.index - 1].latLng}" th:data-to="${s.latLng}"></span>
+                    · <a th:href="${d.legDirectionsUrl(st.index)}" target="_blank" rel="noopener">길찾기 ↗</a>
+                </li>
+                <li th:id="|stop-${s.id}|" th:classappend="${s.visited} ? 'visited'"
+                    th:with="canEditStop=${me.admin or me.leader or (s.author != null and s.author?.id == me.id)}">
+                    <!-- 다녀왔어요 체크 -->
+                    <form th:action="@{|/map/stop/${s.id}/visited|}" method="post">
+                        <button type="submit" class="num" th:title="${s.visited} ? '다녀옴 (누르면 취소)' : '다녀왔으면 눌러요'"
+                                th:text="${s.visited} ? '✓' : ${s.sortOrder + 1}">1</button>
+                    </form>
+                    <div class="body">
+                        <div>
+                            <b class="time" th:if="${s.time != null}" th:text="${s.time}">09:00</b>
+                            <a th:href="${s.googleUrl}" target="_blank" rel="noopener" class="name" th:text="${s.name}">에베소</a>
+                        </div>
+                        <div class="addr" th:if="${s.address != null}" th:text="${s.address}">주소</div>
+                        <!-- 날씨 : static/js/trip-map.js 가 /map/weather 로 불러와 채운다 (선택한 날만) -->
+                        <div th:if="${selected != null}" class="weather"
+                             th:data-lat="${s.lat}" th:data-lng="${s.lng}" th:data-date="${d.date}"></div>
+                        <div class="memo" th:if="${s.memo != null}" th:text="${s.memo}">메모</div>
+                        <div class="meta">
+                            <th:block th:if="${s.author != null}">
+                                <span th:replace="~{fragments/avatar :: avatar(${s.author}, 'sm')}"></span>
+                                <span th:text="${s.author?.displayName ?: '탈퇴한 회원'}">홍기혁</span>
+                            </th:block>
+                            <span th:if="${s.visited and s.visitedAt != null}"
+                                  th:text="|· ${#temporals.format(s.visitedAt, 'M.d HH:mm')} 다녀옴|">· 다녀옴</span>
+                        </div>
+
+                        <!-- 고치기 (만든 사람 / 조장 / 관리자) -->
+                        <details th:if="${canEditStop and selected != null}" class="stop-edit">
+                            <summary>고치기</summary>
+                            <form th:action="@{|/map/stop/${s.id}/edit|}" method="post" class="d-flex gap-2 mt-2">
+                                <input type="time" name="time" class="form-control form-control-sm w-auto" th:value="${s.time}">
+                                <input type="text" name="memo" class="form-control form-control-sm" th:value="${s.memo}" placeholder="메모 / 다녀온 기록">
+                                <button type="submit" class="btn-blue btn-sm text-nowrap">저장</button>
+                            </form>
+                            <div class="d-flex gap-2 mt-2">
+                                <form th:action="@{|/map/stop/${s.id}/move|}" method="post">
+                                    <input type="hidden" name="dir" value="up">
+                                    <button type="submit" class="btn-gray btn-sm" th:disabled="${s.sortOrder == 0}">↑ 앞으로</button>
+                                </form>
+                                <form th:action="@{|/map/stop/${s.id}/move|}" method="post">
+                                    <input type="hidden" name="dir" value="down">
+                                    <button type="submit" class="btn-gray btn-sm" th:disabled="${s.sortOrder == d.stops.size() - 1}">↓ 뒤로</button>
+                                </form>
+                                <form th:action="@{|/map/stop/${s.id}/delete|}" method="post" class="ms-auto"
+                                      onsubmit="return confirm('이 장소를 지울까요?');">
+                                    <button type="submit" class="link-btn text-danger small">삭제</button>
+                                </form>
+                            </div>
+                        </details>
+                    </div>
+                </li>
+                </th:block>
+            </ol>
+
+            <!-- 하루 일정 고치기 / 지우기 -->
+            <details th:if="${canEditDay and selected != null}" class="stop-edit mt-3">
+                <summary>이 날 고치기</summary>
+                <form th:action="@{|/map/day/${d.id}/edit|}" method="post" class="mt-2">
+                    <div class="row g-2">
+                        <div class="col-4 col-sm-2"><input type="number" name="dayNo" min="1" max="30" class="form-control" th:value="${d.dayNo}"></div>
+                        <div class="col-8 col-sm-10"><input type="text" name="title" class="form-control" maxlength="50" th:value="${d.title}"></div>
+                        <div class="col-12"><textarea name="memo" class="form-control" rows="2" placeholder="숙소, 준비물 등" th:text="${d.memo}"></textarea></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <button type="submit" class="btn-blue btn-sm">저장</button>
+                    </div>
+                </form>
+                <form th:action="@{|/map/day/${d.id}/delete|}" method="post" class="text-end"
+                      onsubmit="return confirm('이 날의 일정과 장소를 모두 지울까요?');">
+                    <button type="submit" class="link-btn text-danger small">이 날 지우기</button>
+                </form>
+            </details>
+        </section>
+    </div>
+
+    <!-- ===== 하루 일정 추가 ===== -->
+    <details class="add-day" th:open="${days.isEmpty()}">
+        <summary>+ 하루 일정 추가</summary>
+        <form th:action="@{/map/day}" th:object="${tripDayDto}" method="post" class="mt-3">
+            <div class="row g-2">
+                <div class="col-4 col-sm-2">
+                    <label class="form-label small text-muted" for="dayNo">며칠차</label>
+                    <input type="number" th:field="*{dayNo}" min="1" max="30" class="form-control">
+                </div>
+                <div class="col-8 col-sm-10">
+                    <label class="form-label small text-muted" for="title">제목</label>
+                    <input type="text" th:field="*{title}" class="form-control" maxlength="50" placeholder="예: 이스탄불 도착 · 갑바도기아로">
+                </div>
+                <div class="col-12">
+                    <textarea th:field="*{memo}" class="form-control" rows="2" placeholder="메모 (숙소, 준비물 등)"></textarea>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <span class="small text-muted" th:text="|1일차 = 출발일 ${#temporals.format(departure, 'M월 d일')}|">1일차 = 출발일</span>
+                <button type="submit" class="btn-blue btn-sm">만들기</button>
+            </div>
+        </form>
+    </details>
+
+    <p class="text-muted mt-5" style="font-size: .75rem">지도 © Google · Natural Earth. 장소 번호의 동그라미를 누르면 '다녀옴'으로 기록돼요.</p>
+</div>
+</html>

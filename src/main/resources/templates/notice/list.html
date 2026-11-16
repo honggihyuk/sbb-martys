@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>공지사항</title>
+</head>
+
+<th:block layout:fragment="script">
+    <script th:src="@{/js/write-form.js}"></script>
+</th:block>
+
+<div layout:fragment="content" class="page">
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">마르투스</div>
+            <h1 class="page-title">공지사항</h1>
+        </div>
+        <a sec:authorize="hasRole('ADMIN')" th:if="${formAction == null}" th:href="@{/notice(write='')}" class="btn-blue">공지 쓰기</a>
+    </div>
+
+    <!-- ===== 공지 쓰기 / 고치기 (관리자) : /notice?write, /notice/{id}/edit ===== -->
+    <form sec:authorize="hasRole('ADMIN')" th:if="${formAction != null}"
+          th:action="@{${formAction}}" th:object="${noticeDto}" method="post" class="write-form">
+        <input type="text" th:field="*{subject}" class="wf-title" placeholder="제목" maxlength="100" autofocus>
+        <p th:if="${#fields.hasErrors('subject')}" th:errors="*{subject}" class="fieldError"></p>
+
+        <textarea th:field="*{content}" class="wf-body" rows="6" placeholder="내용"></textarea>
+        <p th:if="${#fields.hasErrors('content')}" th:errors="*{content}" class="fieldError"></p>
+
+        <label class="round-check">
+            <input type="checkbox" th:field="*{pinned}"><i></i>중요 공지로 맨 위에 고정
+        </label>
+        <label class="round-check">
+            <input type="checkbox" th:field="*{poll}" data-toggle-target="poll-edit"><i></i>투표 넣기
+        </label>
+
+        <!-- 투표 항목 : '투표 넣기'를 체크하면 보인다 (static/js/write-form.js) -->
+        <div class="poll-edit" id="poll-edit" th:classappend="*{poll} ? 'open'">
+            <p class="small text-muted mb-2" th:if="${pollLocked}">이미 투표가 시작되어 항목은 바꿀 수 없어요. 체크를 풀면 투표가 빠져요.</p>
+            <!-- 선택지 하나 = 흰 카드 (선택지 이름 + 설명). '+ 선택지 추가'는 static/js/write-form.js -->
+            <div class="poll-inputs">
+                <div class="poll-card" th:each="o, st : *{pollOptions}">
+                    <input type="text" name="pollOptions" th:value="${o}" th:placeholder="|선택지 ${st.count}|"
+                           maxlength="100" th:readonly="${pollLocked}">
+                    <input type="text" name="pollDescriptions" th:value="${noticeDto.descriptionAt(st.index)}"
+                           placeholder="설명 (선택) — 예: 이름에 담긴 뜻" maxlength="200" th:readonly="${pollLocked}">
+                </div>
+            </div>
+            <button type="button" class="link-btn mt-2" data-add-option th:unless="${pollLocked}">+ 선택지 추가</button>
+            <p th:if="${#fields.hasErrors('pollOptions')}" th:errors="*{pollOptions}" class="fieldError"></p>
+            <div class="poll-edit-foot">
+                <label class="round-check">
+                    <input type="checkbox" th:field="*{multiple}" th:disabled="${pollLocked}"><i></i>여러 개 고를 수 있게
+                </label>
+            </div>
+        </div>
+
+        <div class="wf-actions">
+            <a th:href="@{/notice}" class="link-btn fw-semibold text-dark">취소</a>
+            <button type="submit" class="btn-blue">올리기</button>
+        </div>
+    </form>
+
+    <div th:if="${#lists.isEmpty(noticeList)}" class="empty">
+        <strong>아직 공지사항이 없어요</strong>
+    </div>
+
+    <article th:each="notice : ${noticeList}" class="notice-item" th:id="|notice-${notice.id}|"
+             th:classappend="${notice.pinnedNotice} ? 'pinned'">
+        <div class="d-flex justify-content-between">
+            <span class="date">
+                <b class="pin-badge" th:if="${notice.pinnedNotice}">📌 중요</b>
+                <span th:text="${#temporals.format(notice.created, 'yyyy.M.d')}">2026.10.4</span>
+            </span>
+            <!-- 관리자만 수정 / 삭제 -->
+            <span sec:authorize="hasRole('ADMIN')" class="d-flex gap-3">
+                <a th:href="@{|/notice/${notice.id}/edit|}" class="link-btn">수정</a>
+                <form th:action="@{|/notice/${notice.id}/delete|}" method="post" class="m-0"
+                      onsubmit="return confirm('공지를 삭제할까요?');">
+                    <button type="submit" class="link-btn">삭제</button>
+                </form>
+            </span>
+        </div>
+        <h3 th:text="${notice.subject}">조별 활동 안내</h3>
+        <div class="note-text" th:text="${notice.content}">내용</div>
+
+        <!-- 투표 : 항목을 누르면 투표, 같은 항목을 다시 누르면 취소 -->
+        <div class="poll" th:if="${notice.hasPoll()}"
+             th:with="total=${notice.voteCount}, voted=${notice.hasVoted(loginMember.id)}">
+            <form th:each="o : ${notice.pollOptions}" th:action="@{|/notice/${notice.id}/vote|}" method="post" class="m-0">
+                <input type="hidden" name="optionId" th:value="${o.id}">
+                <button type="submit" class="poll-opt" th:classappend="${o.votedBy(loginMember.id)} ? 'mine'">
+                    <span class="bar" th:style="|width: ${o.percentOf(total)}%|"></span>
+                    <span class="txt">
+                        <span><i th:if="${o.votedBy(loginMember.id)}">✓ </i><th:block th:text="${o.text}">마르투스</th:block></span>
+                        <small class="desc" th:if="${o.hasDescription()}" th:text="${o.description}">이름에 담긴 뜻</small>
+                    </span>
+                    <span class="cnt" th:text="|${o.votes.size()}표|">3표</span>
+                </button>
+            </form>
+            <small class="text-muted"
+                   th:text="|${total}명 참여 · ${notice.multipleChoice ? '여러 개 고를 수 있어요' : '하나만 고를 수 있어요'} · ${voted ? '다시 누르면 취소돼요' : '선택지를 눌러 투표해요'}|">5명 참여</small>
+        </div>
+
+        <!-- 댓글 : 접고 펴기 (open 파라미터로 방금 쓴 공지는 펼쳐둔다) -->
+        <details class="cmt" th:open="${param.open != null and param.open[0] == #strings.toString(notice.id)}">
+            <summary class="cmt-toggle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span th:text="${#lists.isEmpty(notice.commentList)} ? '댓글 쓰기' : |댓글 ${#lists.size(notice.commentList)}|">댓글 쓰기</span>
+                <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <div class="cmt-box">
+                <div class="comment" th:each="c : ${notice.commentList}">
+                    <span th:replace="~{fragments/avatar :: avatar(${c.author}, '')}"></span>
+                    <div class="flex-grow-1">
+                        <span class="who-name" th:text="${c.author?.displayName ?: '탈퇴한 회원'}">박경하</span>
+                        <span class="when" th:text="${#temporals.format(c.created, 'M.d')}">10.13</span>
+                        <div class="note-text" th:text="${c.content}">댓글</div>
+                    </div>
+                    <form th:if="${loginMember.admin or loginMember.id == c.author?.id}"
+                          th:action="@{|/notice/comment/${c.id}/delete|}" method="post" class="m-0">
+                        <input type="hidden" name="noticeId" th:value="${notice.id}">
+                        <button type="submit" class="link-btn">삭제</button>
+                    </form>
+                </div>
+                <form th:action="@{|/notice/${notice.id}/comment|}" method="post" class="cmt-form">
+                    <input type="text" name="content" class="cmt-input" placeholder="댓글을 남겨 주세요" required autocomplete="off">
+                    <button type="submit" class="cmt-submit" disabled>등록</button>
+                </form>
+            </div>
+        </details>
+    </article>
+</div>
+</html>

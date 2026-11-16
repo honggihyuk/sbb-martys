@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <!-- 모바일 홈 화면에 추가했을 때 앱처럼 보이게 하는 설정 (gracestars.kr 과 같은 구성) -->
+    <meta name="theme-color" content="#ffffff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="마르투스">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="description" content="마르투스(Martys) — 2026 청년 신약 성서지리 답사 준비">
+
+    <!-- layout:title-pattern : 각 화면의 <title> 뒤에 사이트 이름을 붙인다 (예: 로그인 · 마르투스) -->
+    <title layout:title-pattern="$CONTENT_TITLE · $LAYOUT_TITLE">마르투스</title>
+
+    <!-- 글꼴 : Pretendard -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+    <!-- 공통 Bootstrap CSS (로컬 정적 리소스: src/main/resources/static/css/...) -->
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <!-- 사이트 공통 스타일 -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+
+    <script src="http://localhost:35729/livereload.js?snipver=1"></script>
+
+    <!-- 개별 페이지 전용 CSS 영역 -->
+    <th:block layout:fragment="css"></th:block>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+<!-- Header 영역 -->
+<header th:replace="~{fragments/header::header}"></header>
+
+<!-- 개별 페이지 본문 영역 -->
+<main class="flex-grow-1" layout:fragment="content">
+    <!-- 각 화면 뷰 템플릿의 본문이 이 자리에 삽입됩니다. -->
+</main>
+
+<!-- Footer 영역 -->
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+<!-- 공통 Bootstrap JS 번들 (로컬 정적 리소스: src/main/resources/static/js/...) -->
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+
+<!-- 업로드 오류 등 안내 메시지 -->
+<script th:if="${errorMessage}" th:inline="javascript">
+    alert([[${errorMessage}]]);
+</script>
+
+<!-- 개별 페이지 전용 Script 영역 -->
+<th:block layout:fragment="script"></th:block>
+</body>
+</html>

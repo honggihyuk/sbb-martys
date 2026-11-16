@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>관리자 로그인</title>
+</head>
+
+<div layout:fragment="content" class="auth-wrap">
+    <div class="auth-card admin">
+        <div class="eyebrow">마르투스 · 관리자 모드</div>
+        <div class="brand-lg"><b>관리자</b> 로그인</div>
+        <p class="sub">관리자 계정으로만 들어갈 수 있어요</p>
+
+        <div th:if="${param.error}" class="alert alert-danger py-2 small">관리자ID 또는 비밀번호를 확인해 주세요.</div>
+        <!-- 이용자 계정으로 /admin 에 들어온 경우 : SecurityConfig 의 accessDeniedPage -->
+        <div th:if="${param.denied}" class="alert alert-warning py-2 small">관리자 권한이 없는 계정입니다. 관리자 계정으로 로그인해 주세요.</div>
+        <div th:if="${param.logout}" class="alert alert-secondary py-2 small">로그아웃되었습니다.</div>
+
+        <!-- POST /admin/login 은 관리자용 SecurityFilterChain 이 처리한다 -->
+        <form th:action="@{/admin/login}" method="post">
+            <div class="mb-3">
+                <label for="username" class="form-label fw-semibold">관리자ID</label>
+                <input type="text" name="username" id="username" class="form-control" autocomplete="username" required autofocus>
+            </div>
+            <div class="mb-4">
+                <label for="password" class="form-label fw-semibold">비밀번호</label>
+                <input type="password" name="password" id="password" class="form-control" autocomplete="current-password" required>
+            </div>
+            <button type="submit" class="btn-blue">관리자 로그인</button>
+        </form>
+
+        <div class="auth-foot">
+            <a th:href="@{/member/login}">이용자 로그인으로 돌아가기</a>
+        </div>
+    </div>
+</div>
+</html>

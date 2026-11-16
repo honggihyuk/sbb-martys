@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>기록하기</title>
+</head>
+
+<div layout:fragment="content" class="page" style="max-width: 640px">
+    <h1 class="page-title fs-2 mb-4">모임 기록하기</h1>
+
+    <!-- 사진을 올리려면 enctype="multipart/form-data" 가 꼭 필요하다 -->
+    <form th:action="@{/moments/create}" th:object="${momentDto}" method="post" enctype="multipart/form-data">
+        <div class="alert alert-danger py-2 small" th:if="${#fields.hasGlobalErrors()}" th:errors="*{global}"></div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold" for="title">제목</label>
+            <input type="text" th:field="*{title}" id="title" class="form-control" placeholder="예: 1조 조모임">
+            <p th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="fieldError"></p>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold" for="meetDate">모임 날짜</label>
+            <input type="date" th:field="*{meetDate}" id="meetDate" class="form-control">
+            <p th:if="${#fields.hasErrors('meetDate')}" th:errors="*{meetDate}" class="fieldError"></p>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold" for="photo">사진</label>
+            <input type="file" name="photo" id="photo" class="form-control" accept="image/*">
+        </div>
+        <div class="mb-4">
+            <label class="form-label fw-semibold" for="content">내용</label>
+            <textarea th:field="*{content}" id="content" class="form-control" rows="6" placeholder="모임에서 나눈 이야기를 남겨 주세요"></textarea>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+            <a th:href="@{/moments}" class="btn-gray">취소</a>
+            <button type="submit" class="btn-blue">기록하기</button>
+        </div>
+    </form>
+</div>
+</html>

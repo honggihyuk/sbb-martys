@@ -1,0 +1,23 @@
+HELP.md
+.gradle
+build/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### VS Code ###
+.vscode/
+
+### 업로드한 사진 ###
+uploads/
+
+### OS ###
+.DS_Store
+Thumbs.db

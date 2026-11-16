@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<div th:fragment="header">
+    <!-- 로그인 화면 등 로그인 전에는 헤더를 보여주지 않는다 -->
+    <div class="site-header" sec:authorize="isAuthenticated()">
+        <div class="inner">
+            <div class="top">
+                <a class="brand" th:href="@{/}"><b>2026</b> 청년 신약 성서지리</a>
+
+                <!-- 메뉴 : 현재 주소(currentUri)로 표시 (GlobalModelAdvice 참고)
+                     좁은 화면 : 로고·내 정보 아래 둘째 줄, 지금 메뉴에 밑줄
+                     넓은 화면(1100px~) : 로고와 내 정보 사이 한 줄, 지금 메뉴에 파란 테두리 (style.css '헤더') -->
+                <nav class="tabs" th:with="u=${currentUri}">
+                    <a th:href="@{/study}" th:classappend="${#strings.startsWith(u, '/study')} ? 'active'">말씀 묵상</a>
+                    <a th:href="@{/fitness}" th:classappend="${#strings.startsWith(u, '/fitness')} ? 'active'">체력 증진</a>
+                    <a th:href="@{/map}" th:classappend="${#strings.startsWith(u, '/map')} ? 'active'">지도</a>
+                    <span class="sep"></span>
+                    <a th:href="@{/group}" th:classappend="${#strings.startsWith(u, '/group')} ? 'active'">조별 활동</a>
+                    <a th:href="@{/moments}" th:classappend="${#strings.startsWith(u, '/moments')} ? 'active'">모임 기록</a>
+                    <a th:href="@{/notice}"
+                       th:classappend="|${#strings.startsWith(u, '/notice') ? 'active' : ''} ${hasNewNotice ? 'dot' : ''}|">공지사항</a>
+                    <span class="sep"></span>
+                    <a th:href="@{/minutes}" th:classappend="${#strings.startsWith(u, '/minutes')} ? 'active'">회의록</a>
+                </nav>
+                <div class="header-right">
+                    <a sec:authorize="hasRole('ADMIN')" class="link-btn fw-semibold" th:href="@{/admin}">관리자</a>
+                    <!-- 내 정보 -->
+                    <a class="me-chip" th:href="@{/me}" th:if="${loginMember != null}">
+                        <span th:replace="~{fragments/avatar :: avatar(${loginMember}, '')}"></span>
+                        <span class="me-name" th:text="${loginMember.displayName}">홍기혁</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</html>

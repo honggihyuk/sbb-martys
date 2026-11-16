@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>조별 의견</title>
+</head>
+
+<div layout:fragment="content" class="page">
+    <div class="eyebrow">마르투스</div>
+    <h1 class="page-title">조별 활동</h1>
+    <div class="page-sub" th:text="|${teamCount}개 조 · 단체 사진은 조장·리더가 올려요|">7개 조</div>
+
+    <div class="sub-tabs">
+        <a th:href="@{/group}">조원·사진</a>
+        <a th:href="@{/group(view='notes')}" class="active">조별 의견</a>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-end">
+        <h2 class="fw-bold mb-0">이번 성서지리 팀에 바라는 점</h2>
+        <span class="text-muted small" th:text="|${noteCount} / ${teamCount}개 조 작성|">7 / 7개 조 작성</span>
+    </div>
+    <p class="text-muted mt-2">성서지리에 바라는 점, 서로에게 바라는 점 등 조별로 나눈 이야기를 하나로 모아 적어 주세요</p>
+
+    <!-- 우리 조 의견 (수정 가능) -->
+    <div class="note-box mb-5" th:if="${myTeam != null}">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <b style="color: var(--blue)" th:text="|${myTeam.name} · 우리 조 의견|">5조 · 우리 조 의견</b>
+            <a th:unless="${edit}" th:href="@{/group(view='notes', edit=true)}" class="btn-blue btn-sm">수정하기</a>
+        </div>
+
+        <form th:if="${edit}" th:action="@{|/group/${myTeam.teamNo()}/note|}" method="post">
+            <textarea name="note" class="form-control" rows="12" th:text="${myTeam.info().note}"
+                      placeholder="조별로 나눈 이야기를 적어 주세요"></textarea>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <a th:href="@{/group(view='notes')}" class="btn-gray">취소</a>
+                <button type="submit" class="btn-blue">저장</button>
+            </div>
+        </form>
+
+        <th:block th:unless="${edit}">
+            <div class="note-text" th:if="${myTeam.hasNote()}" th:text="${myTeam.info().note}">의견</div>
+            <div class="text-muted" th:unless="${myTeam.hasNote()}">아직 작성한 의견이 없어요.</div>
+            <div class="note-meta" th:if="${myTeam.info().noteUpdatedBy != null}">
+                마지막 수정 ·
+                <span th:replace="~{fragments/avatar :: avatar(${myTeam.info().noteUpdatedBy}, 'sm')}"></span>
+                <span th:text="${myTeam.info().noteUpdatedBy.displayName}">홍기혁</span>
+                · <span th:text="${#temporals.format(myTeam.info().noteUpdated, 'M.d')}">10.25</span>
+            </div>
+        </th:block>
+    </div>
+
+    <!-- 다른 조 의견 -->
+    <div class="grid-2">
+        <section th:each="team : ${otherTeams}" class="pb-4 border-bottom">
+            <h3 class="fw-bold fs-5" th:text="${team.name}">1조</h3>
+            <div class="note-text note-clamp" th:if="${team.hasNote()}" th:text="${team.info().note}">의견</div>
+            <div class="text-muted small" th:unless="${team.hasNote()}">아직 작성하지 않았어요</div>
+            <div class="note-meta" th:if="${team.info().noteUpdatedBy != null}">
+                마지막 수정 ·
+                <span th:replace="~{fragments/avatar :: avatar(${team.info().noteUpdatedBy}, 'sm')}"></span>
+                <span th:text="${team.info().noteUpdatedBy.displayName}">이름</span>
+                · <span th:text="${#temporals.format(team.info().noteUpdated, 'M.d')}">10.25</span>
+            </div>
+        </section>
+    </div>
+</div>
+</html>

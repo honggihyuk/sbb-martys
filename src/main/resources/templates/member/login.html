@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout}">
+<head>
+    <title>로그인</title>
+</head>
+
+<div layout:fragment="content" class="auth-wrap">
+    <div class="auth-card">
+        <div class="eyebrow">마르투스 · Martys</div>
+        <div class="brand-lg"><b>2026</b> 청년 신약 성서지리</div>
+        <p class="sub">터키 · 그리스 성서지리 답사 준비</p>
+
+        <!-- 회원가입 직후 안내 (MemberController 의 FlashAttribute) -->
+        <div th:if="${signupSuccess}" class="alert alert-success py-2 small" th:text="${signupSuccess}"></div>
+        <!-- 로그인 실패 : SecurityConfig 의 failureUrl("/member/login?error") -->
+        <div th:if="${param.error}" class="alert alert-danger py-2 small">사용자ID 또는 비밀번호를 확인해 주세요.</div>
+
+        <!-- POST /member/login 은 Spring Security 가 처리한다.
+             input 의 name 은 반드시 username, password 여야 한다.
+             th:action 을 쓰면 CSRF 토큰이 hidden 으로 자동 추가된다. -->
+        <form th:action="@{/member/login}" method="post">
+            <div class="mb-3">
+                <label for="username" class="form-label fw-semibold">사용자ID</label>
+                <input type="text" name="username" id="username" class="form-control"
+                       placeholder="아이디를 입력하세요" autocomplete="username" required autofocus>
+            </div>
+            <div class="mb-4">
+                <label for="password" class="form-label fw-semibold">비밀번호</label>
+                <input type="password" name="password" id="password" class="form-control"
+                       placeholder="비밀번호를 입력하세요" autocomplete="current-password" required>
+            </div>
+            <button type="submit" class="btn-blue">로그인</button>
+        </form>
+
+        <div class="auth-foot">
+            아직 계정이 없나요? <a th:href="@{/member/signup}" class="fw-semibold">회원가입</a>
+        </div>
+        <div class="auth-foot mt-2">
+            <a th:href="@{/admin/login}" class="text-muted small">관리자 로그인</a>
+        </div>
+    </div>
+</div>
+</html>
