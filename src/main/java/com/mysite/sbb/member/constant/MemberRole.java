@@ -7,7 +7,7 @@ import lombok.Getter;
 public enum MemberRole {
     ADMIN("ROLE_ADMIN", "관리자"),
     LEADER("ROLE_LEADER", "조장"),   // 조장·리더 : 회의록 열람, 조 사진 등록
-    USER("ROLE_USER", "이용자");
+    USER("ROLE_USER", "조원");
 
     private final String value;
     private final String label;
