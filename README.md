@@ -168,6 +168,10 @@ CREATE DATABASE sbb_a DEFAULT CHARACTER SET utf8mb4;
 | `app.upload-dir` | `uploads` | 올린 사진이 저장되는 폴더 |
 | `GOOGLE_MAPS_API_KEY` (환경변수) | 없음 | 있으면 '지도' 메뉴에 Google 지도, 없으면 Natural Earth 지도로 보여줘요 |
 
+> **Google Maps API 키를 쓸 때 주의할 점**
+> * **API 키 보호** : Google Cloud Console에서 HTTP referrer 제한을 꼭 걸어두세요. 프론트엔드 코드에 키가 그대로 노출되기 때문이에요.
+> * **요금** : Maps Platform은 API 종류(SKU)별로 무료 사용량이 따로 있어요. 위치를 실시간으로 갱신할 때 지도를 다시 불러오지 말고 마커만 옮기면 비용을 줄일 수 있어요.
+
 ### 4) 실행
 ```bash
 ./gradlew bootRun          # Windows : gradlew.bat bootRun
